@@ -2,7 +2,8 @@
 
 A sophisticated, dark-themed expense splitting app built with React, TypeScript, and Vite. Track shared expenses across groups, calculate balances automatically, settle debts with minimal payments, and pay directly via UPI — all from the browser, no backend required.
 
----
+![SettleUp](./screenshots/SettleUp.png)
+
 
 ## Features
 
@@ -12,11 +13,15 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - **Persistent sessions** — stay logged in across browser sessions via `localStorage`
 - **Password strength indicator** on registration
 
+  ![SignIn](./screenshots/Sign_in.png)
+
 ### Groups
 - Create named groups with a custom emoji icon and any number of members
 - **Edit** group name and emoji inline at any time
 - Delete a group along with all its expenses
 - Member avatars with stacked initials shown on the groups list
+
+  ![Groups](./screenshots/HomePage.png)
 
 ### Expenses
 - Add expenses with description, amount, payer, split members, and category
@@ -25,11 +30,15 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - Mark individual expenses as settled or unsettled
 - Delete expenses with a confirmation prompt
 - Per-person split amount shown automatically
+  
+  ![Expenses](./screenshots/Expenses.png)
 
 ### Balances & Settle Up
 - Real-time balance calculation per member across all unsettled expenses
 - **Minimum payments algorithm** — computes the fewest transactions needed to fully settle a group
 - Visual balance bars showing relative magnitude of each person's position
+
+  ![Balances](./screenshots/Balances.png)
 
 ### UPI & Payments
 - Save a UPI ID and phone number for each group member under the **Pay / UPI** tab
@@ -38,16 +47,22 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - Show the payee's UPI ID inline for manual payments
 - Pending amount auto-calculated per member from unsettled expenses
 
+  ![UPI](./screenshots/Pay.png)
+
 ### History
 - Chronological list of all expenses across every group
 - Filter by group with one click
 - Shows total amount and transaction count for the current filter
+
+  ![History](./screenshots/History.png)
 
 ### Analytics
 - Key metrics: total tracked, settled amount, average expense, settlement percentage
 - Spending breakdown by group with relative bar charts
 - Spending breakdown by category
 - Top payers ranked by total amount paid
+
+  ![Analytics](./screenshots/Analytics.png)
 
 ### Design
 - Monochromatic dark theme — pure blacks, whites, and grays only; no color noise
@@ -205,8 +220,3 @@ This produces the fewest possible transactions to fully settle a group.
 - [ ] Multi-currency support
 - [ ] Native mobile app (React Native)
 
----
-
-## License
-
-MIT
