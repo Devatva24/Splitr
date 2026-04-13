@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dark rounded square background -->
+  <rect width="32" height="32" rx="7" fill="#0f0f0f"/>
+  <!-- Diagonal split line -->
+  <line x1="21" y1="9" x2="11" y2="23" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <!-- Two dots representing "split" -->
+  <circle cx="21" cy="9"  r="2.8" fill="white"/>
+  <circle cx="11" cy="23" r="2.8" fill="white"/>
+</svg>

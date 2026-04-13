@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StoreProvider } from "@/contexts/StoreContext";
 import { Navbar } from "@/components/Navbar";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import History from "./pages/History";
 import Analytics from "./pages/Analytics";
@@ -16,25 +15,29 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Redirect authenticated users away from login/register back to home
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { currentUser } = useAuth();
+  const { currentUser, authLoading } = useAuth();
+  if (authLoading) return null;
   if (currentUser) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { currentUser } = useAuth();
   return (
-    // StoreProvider inside AuthProvider so it can read currentUser
+    // StoreProvider is always active — guests get localStorage, users get Supabase
     <StoreProvider>
-      {currentUser && <Navbar />}
+      <Navbar />
       <Routes>
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        {/* Auth pages — hidden once logged in */}
+        <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-        <Route path="*" element={<NotFound />} />
+
+        {/* Main app — open to everyone (guests + authenticated) */}
+        <Route path="/"          element={<Index />} />
+        <Route path="/history"   element={<History />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="*"          element={<NotFound />} />
       </Routes>
     </StoreProvider>
   );

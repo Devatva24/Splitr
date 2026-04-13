@@ -3,9 +3,10 @@ import { useAuthStore, User, AuthError } from "@/hooks/useAuthStore";
 
 interface AuthContextType {
   currentUser: User | null;
-  register: (name: string, email: string, password: string) => AuthError | null;
-  login: (email: string, password: string) => AuthError | null;
-  logout: () => void;
+  authLoading: boolean;
+  register: (name: string, email: string, password: string) => Promise<AuthError | null>;
+  login:    (email: string, password: string) => Promise<AuthError | null>;
+  logout:   () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);

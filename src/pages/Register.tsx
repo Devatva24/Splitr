@@ -4,34 +4,34 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AuthError } from "@/hooks/useAuthStore";
 
 const ERROR_MESSAGES: Record<AuthError, string> = {
-  EMAIL_EXISTS: "An account with this email already exists.",
+  EMAIL_EXISTS:        "An account with this email already exists.",
   INVALID_CREDENTIALS: "Invalid credentials.",
-  EMAIL_REQUIRED: "Email is required.",
-  PASSWORD_TOO_SHORT: "Password must be at least 6 characters.",
-  NAME_REQUIRED: "Name is required.",
+  EMAIL_REQUIRED:      "Email is required.",
+  PASSWORD_TOO_SHORT:  "Password must be at least 6 characters.",
+  NAME_REQUIRED:       "Name is required.",
+  UNKNOWN:             "Something went wrong. Please try again.",
 };
 
 const Register = () => {
   const { register } = useAuth();
-  const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const navigate  = useNavigate();
+  const [name,     setName]     = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+  const [loading,  setLoading]  = useState(false);
 
-  const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
+  const strength =
+    password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setTimeout(() => {
-      const err = register(name, email, password);
-      if (err) { setError(ERROR_MESSAGES[err]); setLoading(false); }
-      else navigate("/");
-    }, 300);
+    const err = await register(name, email, password);
+    if (err) { setError(ERROR_MESSAGES[err]); setLoading(false); }
+    else navigate("/");
   };
 
   return (
@@ -42,8 +42,10 @@ const Register = () => {
           <span className="font-serif-italic text-[15px] text-foreground tracking-tight">Splitr</span>
         </div>
 
-        <h1 className="heading-serif text-3xl text-foreground mb-1">Create account</h1>
-        <p className="text-sm text-muted-foreground mb-8">All your data stays private to your account.</p>
+        <h1 className="heading-serif text-3xl text-foreground mb-1">Save your work</h1>
+        <p className="text-sm text-muted-foreground mb-8">
+          Create a free account and your groups &amp; expenses will be saved permanently — across all your devices.
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -54,7 +56,7 @@ const Register = () => {
               className="w-full h-10 px-3 bg-card border border-border text-foreground text-sm rounded-md placeholder:text-muted-foreground focus:outline-none focus:border-border-md transition-colors"
               placeholder="Your full name"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
@@ -67,7 +69,7 @@ const Register = () => {
               className="w-full h-10 px-3 bg-card border border-border text-foreground text-sm rounded-md placeholder:text-muted-foreground focus:outline-none focus:border-border-md transition-colors"
               placeholder="you@example.com"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -81,7 +83,7 @@ const Register = () => {
                 className="w-full h-10 px-3 pr-10 bg-card border border-border text-foreground text-sm rounded-md placeholder:text-muted-foreground focus:outline-none focus:border-border-md transition-colors"
                 placeholder="Min. 6 characters"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
               <button
@@ -94,9 +96,12 @@ const Register = () => {
             </div>
             {password.length > 0 && (
               <div className="mt-2 flex gap-1">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-px flex-1 transition-all duration-300"
-                    style={{ background: i <= strength ? "hsl(0 0% 60%)" : "hsl(0 0% 14%)" }} />
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-px flex-1 transition-all duration-300"
+                    style={{ background: i <= strength ? "hsl(0 0% 60%)" : "hsl(0 0% 14%)" }}
+                  />
                 ))}
               </div>
             )}
@@ -113,9 +118,9 @@ const Register = () => {
             disabled={loading}
             className="w-full h-10 bg-foreground text-background text-sm font-medium rounded-md hover:opacity-90 disabled:opacity-40 transition-opacity mt-2 flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <span className="w-3.5 h-3.5 border border-background/30 border-t-background rounded-full animate-spin" />
-            ) : "Create account"}
+            {loading
+              ? <span className="w-3.5 h-3.5 border border-background/30 border-t-background rounded-full animate-spin" />
+              : "Create account & save"}
           </button>
         </form>
 
@@ -124,6 +129,10 @@ const Register = () => {
           <Link to="/login" className="text-foreground hover:opacity-70 transition-opacity underline underline-offset-2">
             Sign in
           </Link>
+          {" · "}
+          <button onClick={() => navigate(-1)} className="text-foreground hover:opacity-70 transition-opacity underline underline-offset-2">
+            Go back
+          </button>
         </p>
       </div>
     </div>
