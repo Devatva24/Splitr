@@ -1,19 +1,33 @@
 # Splitr
 
-A sophisticated, dark-themed expense splitting app built with React, TypeScript, and Vite. Track shared expenses across groups, calculate balances automatically, settle debts with minimal payments, and pay directly via UPI — all from the browser, no backend required.
+A sophisticated, dark-themed expense splitting app built with React, TypeScript, Vite, and Supabase. Track shared expenses across groups, calculate balances automatically, settle debts with minimal payments, and pay directly via UPI — works instantly as a guest, with optional account creation to save data permanently across devices.
 
 ![SettleUp](./screenshots/SettleUp.png)
 
 
 ## Features
 
+### Guest Mode — No Sign-up Required
+- **Use immediately** — the app opens directly on the homepage with no login wall
+- Create groups, add expenses, and track balances without an account
+- Guest data is saved locally in the browser via `localStorage`
+- **Seamless upgrade** — if you later create an account, all your guest groups and expenses are automatically migrated to your cloud account; nothing is lost
+
 ### Authentication
-- **Account creation & login** — email and password based, with client-side hashing
-- **Private data** — each user's groups and expenses are stored separately under their account ID; no data leaks between accounts
-- **Persistent sessions** — stay logged in across browser sessions via `localStorage`
-- **Password strength indicator** on registration
+- **Sign in / Create account** buttons in the top-right navbar — visible to guests at all times
+- Account creation and login via email and password, powered by **Supabase Auth** (bcrypt hashing; passwords never stored in your database)
+- **Persistent sessions** — stay logged in across browser restarts via Supabase JWT session tokens
+- Password strength indicator on registration
+- Once signed in, the avatar dropdown replaces the auth buttons
 
   ![SignIn](./screenshots/Sign_in.png)
+
+### Cloud Database (Supabase)
+- All groups and expenses for authenticated users are stored in a **PostgreSQL database** on Supabase
+- **Row Level Security (RLS)** enforced at the database level — each user can only ever read or write their own data
+- **Optimistic updates** — the UI updates instantly on every action; changes are synced to the database in the background
+- Data persists across all devices and browsers when signed in
+- Guest data lives in `localStorage` and is automatically migrated to Supabase on first sign-up
 
 ### Groups
 - Create named groups with a custom emoji icon and any number of members
@@ -30,7 +44,7 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - Mark individual expenses as settled or unsettled
 - Delete expenses with a confirmation prompt
 - Per-person split amount shown automatically
-  
+
   ![Expenses](./screenshots/Expenses.png)
 
 ### Balances & Settle Up
@@ -68,8 +82,10 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - Monochromatic dark theme — pure blacks, whites, and grays only; no color noise
 - **DM Serif Display** for editorial headings, **Instrument Sans** for body text, **JetBrains Mono** for all numbers
 - Hairline `1px` borders define structure; no decorative shadows or gradients
+- Custom SVG favicon — a minimal split mark matching the app's aesthetic
 - Fully responsive — top navbar on desktop, bottom tab bar on mobile
 - Smooth fade-in transitions on page and list loads
+- Profile dropdown closes on any click outside it
 
 ---
 
@@ -84,7 +100,9 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 | Styling | Tailwind CSS v3 |
 | UI primitives | Radix UI (via shadcn/ui) |
 | State management | React Context + `useState` |
-| Data persistence | `localStorage` (per-user namespaced) |
+| Auth | Supabase Auth (email/password, JWT) |
+| Database | Supabase (PostgreSQL + Row Level Security) |
+| Guest persistence | `localStorage` |
 | Testing | Vitest + Testing Library |
 
 ---
@@ -93,15 +111,19 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 
 ```
 src/
-├── App.tsx                        # Root — providers, routing, auth gates
+├── App.tsx                        # Root — providers, routing, guest-first flow
 │
 ├── contexts/
 │   ├── AuthContext.tsx            # Auth state shared across the app
 │   └── StoreContext.tsx           # Global expense store (single reactive instance)
 │
 ├── hooks/
-│   ├── useAuthStore.ts            # register / login / logout logic + localStorage
-│   └── useExpenseStore.ts         # Groups, expenses, balances, UPI — all core logic
+│   ├── useAuthStore.ts            # register / login / logout via Supabase Auth
+│   └── useExpenseStore.ts         # Groups, expenses, balances, UPI — guest + cloud logic
+│
+├── lib/
+│   ├── supabase.ts                # Supabase client singleton
+│   └── utils.ts                   # Tailwind merge helper
 │
 ├── pages/
 │   ├── Index.tsx                  # Groups list + group detail view
@@ -112,17 +134,14 @@ src/
 │   └── NotFound.tsx               # 404
 │
 ├── components/
-│   ├── Navbar.tsx                 # Top nav + mobile bottom bar + user menu
+│   ├── Navbar.tsx                 # Top nav + mobile bottom bar + guest auth buttons
 │   ├── GroupDetail.tsx            # Expenses / Balances / Settle Up / UPI tabs
 │   ├── AddExpenseDialog.tsx       # Modal — add a new expense
 │   ├── NewGroupDialog.tsx         # Modal — create a new group
 │   ├── ConfirmDialog.tsx          # Generic confirmation dialog
-│   ├── ProtectedRoute.tsx         # Redirects unauthenticated users to /login
+│   ├── ProtectedRoute.tsx         # Loading state handler (no hard redirect for guests)
 │   ├── NavLink.tsx                # React Router NavLink wrapper
 │   └── ui/                        # shadcn/ui primitives (Dialog, AlertDialog, etc.)
-│
-├── lib/
-│   └── utils.ts                   # Tailwind merge helper
 │
 ├── index.css                      # CSS variables (dark theme) + font imports
 └── main.tsx                       # React DOM entry point
@@ -136,14 +155,38 @@ src/
 
 - Node.js 18 or later
 - npm 9 or later
+- A free [Supabase](https://supabase.com) project
 
-### Install & run
+### 1. Clone and install
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/Devatva24/Splitr.git
+cd Splitr
 npm install
+```
 
-# 2. Start the development server
+### 2. Set up Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to **SQL Editor** → **New query**, paste the contents of `supabase/schema.sql`, and click **Run**
+3. Go to **Project Settings → API** and copy your **Project URL** and **anon / public** key
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your values in `.env.local`:
+
+```
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+### 4. Run the dev server
+
+```bash
 npm run dev
 ```
 
@@ -161,16 +204,23 @@ npm run test:watch   # Run tests in watch mode
 
 ---
 
+## Deployment (Vercel)
+
+1. Push to GitHub
+2. Import the repo on [vercel.com](https://vercel.com)
+3. Go to **Settings → Environment Variables** and add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (tick Production, Preview, and Development for each)
+4. Redeploy
+
+---
+
 ## Data Storage
 
-All data is stored in the browser's `localStorage` — there is no server, no database, and no network requests (except for loading Google Fonts).
-
-| Key | Contents |
+| User type | Where data lives |
 |---|---|
-| `splitr_auth_v1` | All user accounts (hashed passwords, names, emails) |
-| `splitr_data_v5_{userId}` | Groups and expenses for a specific user |
+| Guest (not signed in) | Browser `localStorage` under `splitr_data_v5_guest` |
+| Authenticated | Supabase PostgreSQL database, scoped to `user_id` via RLS |
 
-Passwords are hashed client-side with a simple integer hash before storage. This is suitable for a local-first personal app; for production deployment with sensitive data, replace with a proper backend auth service (e.g. Supabase, Firebase Auth).
+When a guest registers, their local groups and expenses are automatically migrated to Supabase and the local copy is cleared.
 
 ---
 
@@ -190,6 +240,10 @@ When a member's UPI ID is saved, the Settle Up tab generates this link pre-fille
 ---
 
 ## Architecture Notes
+
+### Guest-first flow
+
+The app requires no authentication to use. `useExpenseStore` checks whether a `userId` is present — if not, it reads and writes directly to `localStorage`. Once the user signs in, the hook switches to Supabase and any guest data is migrated automatically. The navbar always shows **Sign in** and **Create account** to guests, and the avatar dropdown to authenticated users.
 
 ### Why a global StoreContext?
 
@@ -212,11 +266,11 @@ This produces the fewest possible transactions to fully settle a group.
 
 ## Roadmap
 
-- [ ] Cloud sync / multi-device support (Supabase or Firebase backend)
+- [x] Cloud sync / multi-device support (Supabase backend)
+- [x] Guest mode with automatic data migration on sign-up
 - [ ] Recurring expenses
 - [ ] Expense photos / receipt attachments
 - [ ] CSV / PDF export
 - [ ] Push notifications for pending payments
 - [ ] Multi-currency support
 - [ ] Native mobile app (React Native)
-
