@@ -23,6 +23,18 @@ type Tab = "expenses" | "balances" | "settle" | "upi";
 
 const EMOJIS = ["✈️","🏠","🍕","🏖️","🎒","🎊","🏔️","🚗","🎸","💼","🎯","🍜"];
 
+// ── Fix 4: sanitize Indian phone numbers before building wa.me URL ──
+// Handles: +91XXXXXXXXXX  →  XXXXXXXXXX
+//           91XXXXXXXXXX  →  XXXXXXXXXX
+//            0XXXXXXXXXX  →  XXXXXXXXXX
+//             XXXXXXXXXX  →  XXXXXXXXXX (pass-through)
+const sanitizePhone = (raw: string): string => {
+  const d = raw.replace(/\D/g, ""); // strip all non-digits first
+  if (d.startsWith("91") && d.length === 12) return d.slice(2);
+  if (d.startsWith("0") && d.length === 11) return d.slice(1);
+  return d;
+};
+
 export function GroupDetail({ group, onBack, onDeleteGroup, onEditGroup, onAddExpense, onEditExpense, onToggleSettle, onDeleteExpense, onSetMemberUPI }: Props) {
   const [tab, setTab] = useState<Tab>("expenses");
   const [showAdd, setShowAdd] = useState(false);
@@ -41,6 +53,23 @@ export function GroupDetail({ group, onBack, onDeleteGroup, onEditGroup, onAddEx
   const [upiInput, setUpiInput] = useState("");
   const [upiPhone, setUpiPhone] = useState("");
   const [qrExpanded, setQrExpanded] = useState<string | null>(null);
+
+  // ── Fix 3: desktop UPI detection ──
+  // upi:// deep-links only work on mobile devices with a UPI app installed.
+  // On desktop we fall back to copying the UPI ID to clipboard instead.
+  const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
+  const [upiCopied, setUpiCopied] = useState<string | null>(null);
+
+  const handleUpiClick = (link: string, upiId: string, e: React.MouseEvent) => {
+    if (!isMobile) {
+      e.preventDefault();
+      navigator.clipboard.writeText(upiId).then(() => {
+        setUpiCopied(upiId);
+        setTimeout(() => setUpiCopied(null), 2000);
+      });
+    }
+    // on mobile: default anchor behaviour opens the UPI app
+  };
 
   const balances = computeBalances(group);
   const settlements = computeSettlements(group);
@@ -252,7 +281,10 @@ export function GroupDetail({ group, onBack, onDeleteGroup, onEditGroup, onAddEx
                 {settlements.map((t, i) => {
                   const toProfile = group.memberProfiles?.[t.to];
                   const upiLink = toProfile?.upiId ? buildUPILink(toProfile.upiId, t.amt, t.to) : null;
-                  const waLink = toProfile?.phone ? `https://wa.me/91${toProfile.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${t.to}, you have a pending payment of ${fmt(t.amt)} on Splitr. Please clear it at your earliest. 🙏`)}` : null;
+                  // Fix 4: sanitize phone before building wa.me URL so +91/91/0 prefixes don't double up
+                  const waLink = toProfile?.phone
+                    ? `https://wa.me/91${sanitizePhone(toProfile.phone)}?text=${encodeURIComponent(`Hi ${t.to}, you have a pending payment of ${fmt(t.amt)} on Splitr. Please clear it at your earliest. 🙏`)}`
+                    : null;
                   return (
                     <div key={i} className={`px-5 py-4 ${i < settlements.length - 1 ? "border-b border-border" : ""}`}>
                       <div className="flex items-center gap-3 mb-3">
@@ -269,9 +301,17 @@ export function GroupDetail({ group, onBack, onDeleteGroup, onEditGroup, onAddEx
                       {/* Action buttons */}
                       <div className="flex gap-2 flex-wrap">
                         {upiLink && (
-                          <a href={upiLink} target="_blank" rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 h-7 px-3 bg-foreground text-background rounded text-[11px] font-medium hover:opacity-85 transition-opacity">
-                            <ExternalLink className="w-3 h-3" /> Pay via UPI
+                          // Fix 3: on desktop, clicking copies the UPI ID instead of navigating
+                          // to a upi:// URL that the browser can't handle
+                          <a
+                            href={upiLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => handleUpiClick(upiLink, toProfile!.upiId, e)}
+                            className="inline-flex items-center gap-1.5 h-7 px-3 bg-foreground text-background rounded text-[11px] font-medium hover:opacity-85 transition-opacity"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {!isMobile && upiCopied === toProfile?.upiId ? "UPI ID copied!" : "Pay via UPI"}
                           </a>
                         )}
                         {waLink && (
@@ -302,8 +342,16 @@ export function GroupDetail({ group, onBack, onDeleteGroup, onEditGroup, onAddEx
                           <p className="label-xs mb-2">UPI ID</p>
                           <p className="num text-[12px] text-foreground">{toProfile.upiId}</p>
                           <p className="text-[11px] text-muted-foreground mt-1">Open your UPI app and scan / search this ID to pay</p>
-                          <a href={upiLink!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-foreground underline underline-offset-2 mt-2">
-                            Open in UPI app <ExternalLink className="w-2.5 h-2.5" />
+                          {/* Fix 3: same desktop clipboard fallback for the link inside the QR panel */}
+                          <a
+                            href={upiLink!}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => handleUpiClick(upiLink!, toProfile!.upiId, e)}
+                            className="inline-flex items-center gap-1 text-[11px] text-foreground underline underline-offset-2 mt-2"
+                          >
+                            {!isMobile && upiCopied === toProfile.upiId ? "Copied!" : "Open in UPI app"}
+                            <ExternalLink className="w-2.5 h-2.5" />
                           </a>
                         </div>
                       )}
@@ -353,9 +401,15 @@ export function GroupDetail({ group, onBack, onDeleteGroup, onEditGroup, onAddEx
                         return (
                           <div className="flex items-center gap-2 mt-1.5">
                             <span className="text-[11px] text-muted-foreground">Pending: <span className="num text-foreground">{fmt(pending)}</span></span>
-                            <a href={link} target="_blank" rel="noreferrer"
-                              className="text-[10px] uppercase tracking-widest text-foreground underline underline-offset-2 hover:opacity-60 transition-opacity">
-                              Pay now
+                            {/* Fix 3: clipboard fallback for desktop on this "Pay now" link too */}
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => handleUpiClick(link, profile.upiId, e)}
+                              className="text-[10px] uppercase tracking-widest text-foreground underline underline-offset-2 hover:opacity-60 transition-opacity"
+                            >
+                              {!isMobile && upiCopied === profile.upiId ? "Copied!" : "Pay now"}
                             </a>
                           </div>
                         );
