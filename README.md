@@ -1,4 +1,4 @@
-# Splitr
+<h1 align="center">Splitr</h1>
 
 A sophisticated, dark-themed expense splitting app built with React, TypeScript, Vite, and Supabase. Track shared expenses across groups, calculate balances automatically, settle debts with minimal payments, and pay directly via UPI — works instantly as a guest, with optional account creation to save data permanently across devices.
 
@@ -240,6 +240,8 @@ upi://pay?pa={upiId}&pn={payeeName}&am={amount}&cu=INR&tn={note}
 When a member's UPI ID is saved, the Settle Up tab generates this link pre-filled with the exact settlement amount. Tapping it opens the default UPI app on the device.
 
 **WhatsApp reminders** open `https://wa.me/91{phone}?text={message}` with a pre-written message containing the pending amount.
+
+![Settle_Up](./screenshots/Settle_Up.png)
 
 ---
 
