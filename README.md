@@ -13,6 +13,8 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - Guest data is saved locally in the browser via `localStorage`
 - **Seamless upgrade** — if you later create an account, all your guest groups and expenses are automatically migrated to your cloud account; nothing is lost
 
+  ![GuestMode](./screenshots/GuestMode.png)
+
 ### Authentication
 - **Sign in / Create account** buttons in the top-right navbar — visible to guests at all times
 - Account creation and login via email and password, powered by **Supabase Auth** (bcrypt hashing; passwords never stored in your database)
@@ -28,6 +30,8 @@ A sophisticated, dark-themed expense splitting app built with React, TypeScript,
 - **Optimistic updates** — the UI updates instantly on every action; changes are synced to the database in the background
 - Data persists across all devices and browsers when signed in
 - Guest data lives in `localStorage` and is automatically migrated to Supabase on first sign-up
+
+  ![Supabase](./screenshots/Supabase.png)
 
 ### Groups
 - Create named groups with a custom emoji icon and any number of members
